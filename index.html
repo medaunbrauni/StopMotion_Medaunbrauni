@@ -43,7 +43,25 @@ button,.btn,select{background:#2a2a2a;color:#eee;border:0;border-radius:10px;min
 button:active,.btn:active{background:#444}
 button:disabled{opacity:.4}
 .primary{background:#c22}
-#shot{width:72px;height:72px;border-radius:50%;background:#e33;border:4px solid #fff;margin:0 auto;flex:none}
+#shot,#qShot{width:72px;height:72px;border-radius:50%;background:#e33;border:4px solid #fff;margin:0 auto;flex:none}
+#dock{flex:none}
+#quick,.dockHead{display:none}
+/* Phone: full-screen camera with quick controls; everything else lives in a bottom sheet. */
+@media (max-width: 760px), (max-height: 500px) {
+  #stage{position:fixed;inset:0;min-height:0}
+  #dock{position:fixed;left:0;right:0;bottom:0;z-index:3;max-height:80dvh;overflow-y:auto;background:#111;border-top:1px solid #444;
+    border-radius:14px 14px 0 0;transform:translateY(100%);transition:transform .25s;padding-bottom:env(safe-area-inset-bottom)}
+  body.dock #dock{transform:none}
+  .dockHead{display:flex}
+  #tl,#panel{max-height:none}
+  #quick{display:flex;position:absolute;left:0;right:0;bottom:0;z-index:2;gap:10px;align-items:center;justify-content:space-between;
+    padding:12px 12px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#000a)}
+  body.dock #quick,body.playing #quick > :not(#qPlay){visibility:hidden}
+  #quick button{min-width:50px;min-height:50px;border-radius:50%;background:#000a;border:1px solid #fff5;font-size:20px;padding:0}
+  #quick #qShot{width:78px;height:78px;background:#e33;border:4px solid #fff;margin:0}
+  #quick #qDock{border-radius:25px;padding:0 14px;font-size:15px}
+  #quick .on{background:#c22;border-color:#fff}
+}
 .mini{font-size:13px;min-height:36px;padding:0 10px;border:1px solid #555}
 .mini.on{background:#c22;border-color:#fff}
 label{display:flex;align-items:center;gap:6px}
@@ -96,8 +114,17 @@ input[type=color]{width:44px;height:36px;border:0;background:none}
   <p id="msg"></p>
   <div id="count"><b></b><span></span></div>
   <button id="fileBtn" popovertarget="fileMenu" aria-label="Menú Archivo">☰ Archivo</button>
+  <div id="quick">
+    <button id="qOnion" aria-label="Papel cebolla">🧅</button>
+    <button id="qPlay" aria-label="Reproducir">▶</button>
+    <button id="qShot" aria-label="Capturar cuadro"></button>
+    <button id="qFull" aria-label="Pantalla completa">⛶</button>
+    <button id="qDock" aria-label="Abrir editor">Editar ▴</button>
+  </div>
 </div>
 <div id="fileMenu" popover></div>
+<div id="dock">
+<div class="bar dockHead"><b>Editor</b><span class="grow"></span><button id="dockClose">▾ Volver a la cámara</button></div>
 <div class="bar">
   <button id="playBtn" aria-label="Reproducir">▶</button>
   <select id="mode" aria-label="Modo de reproducción">
@@ -114,6 +141,7 @@ input[type=color]{width:44px;height:36px;border:0;background:none}
   <button data-tab="layers">Capas</button><button data-tab="export">Exportar</button>
 </nav>
 <section id="panel"></section>
+</div>
 <script type="module">
 import { passes, exportTicks, frameAt } from './timing.js';
 
@@ -386,6 +414,7 @@ function draw() {
   $('#time').textContent = live
     ? (replaceIdx != null ? `Reemplazar cuadro ${replaceIdx + 1}` : `Nuevo cuadro ${P.frames.length + 1}`)
     : `${curFrame() + 1}/${P.frames.length} · ${fmt(curTick / P.fps)}`;
+  $('#qOnion').classList.toggle('on', P.onion);
   $('#count b').textContent = count.big;
   $('#count span').textContent = count.sub;
   msg.textContent = tab === 'cam' ? camErr : P.frames.length ? '' : 'Usa la pestaña Cámara para capturar cuadros';
@@ -740,7 +769,11 @@ function togglePlay() {
   updPlay();
   return from;
 }
-function updPlay() { $('#playBtn').textContent = player ? '■' : '▶'; requestDraw(); }
+function updPlay() {
+  $('#playBtn').textContent = $('#qPlay').textContent = player ? '■' : '▶';
+  document.body.classList.toggle('playing', !!player);
+  requestDraw();
+}
 
 // Scrubbing: a short grain of every audio layer at the cursor, for lip sync.
 let grains = [];
@@ -1264,6 +1297,16 @@ menu.oninput = panel.oninput;
 menu.onchange = panel.onchange;
 
 $('#playBtn').onclick = togglePlay;
+
+// Phone quick controls (visible only on narrow screens).
+$('#qPlay').onclick = togglePlay;
+$('#qShot').onclick = () => tab === 'cam' ? shot() : setTab('cam');
+$('#qOnion').onclick = () => { P.onion = !P.onion; save(); if (tab === 'cam') renderPanel(); requestDraw(); };
+$('#qFull').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.().catch(() => {});
+$('#qDock').onclick = () => { document.body.classList.add('dock'); renderTL(); };
+$('#dockClose').onclick = () => { document.body.classList.remove('dock'); if (tab !== 'cam') setTab('cam'); };
+// Tapping the picture during playback stops it and returns to the camera.
+cv.addEventListener('click', () => { if (player) togglePlay(); });
 $('#mode').onchange = e => { P.mode = e.target.value; save(); if (tab === 'export') renderPanel(); };
 $('#fps').onchange = e => {
   P.fps = Math.min(30, Math.max(1, +e.target.value || 12));
