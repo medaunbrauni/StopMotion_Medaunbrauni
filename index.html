@@ -7,6 +7,12 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
 <title>StopMo</title>
+<script>
+// Any uncaught error is shown on screen, so failures on a phone are never silent.
+const showFatal = m => { const el = document.getElementById('msg') || document.getElementById('rMsg'); if (el) el.textContent = 'Error: ' + m; };
+addEventListener('error', e => showFatal(e.message));
+addEventListener('unhandledrejection', e => showFatal(e.reason?.message || e.reason));
+</script>
 <style>
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;background:#111;color:#eee;font:15px system-ui,sans-serif;overflow:hidden;touch-action:manipulation;user-select:none}
@@ -403,10 +409,20 @@ async function listCams() {
   cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
   if (tab === 'cam' && !burst) renderPanel();
 }
-navigator.mediaDevices.addEventListener('devicechange', listCams);
+navigator.mediaDevices?.addEventListener('devicechange', listCams);
+// Explains a camera failure in terms of what the user can do about it.
+function camMsg(e) {
+  if (!navigator.mediaDevices?.getUserMedia) return 'Este navegador no permite usar la cámara. Ábrelo en Chrome (no dentro de WhatsApp, Instagram u otra app).';
+  return {
+    NotAllowedError: 'Permiso de cámara bloqueado. Toca el ícono junto a la dirección → Permisos → Cámara → Permitir, y recarga.',
+    NotFoundError: 'No se encontró ninguna cámara.',
+    NotReadableError: 'La cámara está ocupada por otra app. Ciérrala y toca "Activar cámara".',
+  }[e?.name] ?? 'No se pudo abrir la cámara: ' + e?.message;
+}
 async function startCam() {
   stopCam();
   if (conns.size) return; // the phone is the camera
+  if (!navigator.mediaDevices?.getUserMedia) { camErr = camMsg(); requestDraw(); return; }
   const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
   try {
     cam.srcObject = await navigator.mediaDevices.getUserMedia({
@@ -415,10 +431,11 @@ async function startCam() {
     camErr = '';
     await cam.play();
     liveLoop();
-    listCams(); // labels are only readable after permission is granted
+    listCams(); // labels are only readable after permission is granted; also hides "Activar cámara"
   } catch (e) {
     if (P.camId && e.name === 'OverconstrainedError') { P.camId = ''; save(); return startCam(); } // camera unplugged
-    camErr = 'No se pudo abrir la cámara: ' + e.message;
+    camErr = camMsg(e);
+    if (tab === 'cam' && !burst) renderPanel();
     requestDraw();
   }
 }
@@ -560,7 +577,7 @@ async function runRemote(hostId) {
     rCam.srcObject?.getTracks().forEach(t => t.stop());
     try {
       rCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } } });
-    } catch (e) { say('No se pudo abrir la cámara: ' + e.message); }
+    } catch (e) { say(camMsg(e) + ' Toca ⟲ para reintentar.'); }
   };
   const showOnion = () => { onion.style.opacity = $('#rOnOn').checked ? $('#rOnOp').value : 0; };
   $('#rOnOn').onchange = $('#rOnOp').oninput = showOnion;
@@ -999,7 +1016,11 @@ function camPanel() {
   if (burst) return `<p class="hint">Revisa los ${burst.pending.length} disparos. Toca uno para descartarlo.</p>
     <div class="review">${burst.pending.map((p, i) => `<img src="${p.url}" data-pi="${i}"${p.keep ? '' : ' class="off"'} alt="Disparo ${i + 1}">`).join('')}</div>
     <div class="bar"><button data-act="burstPlay">${burst.timer ? '■ Detener' : `▶ Ver a ${P.fps} fps`}</button><button class="primary" data-act="burstAdd">Añadir ${burst.pending.filter(p => p.keep).length} al timeline</button><button data-act="burstDiscard">Descartar</button></div>`;
-  return `${cams.length > 1 ? `<div class="bar"><label>Cámara <select data-p="camId">${opts([['', 'Automática'],
+  // Some phones only show the permission prompt after a tap.
+  const camOff = !conns.size && !cam.srcObject;
+  return `${camOff ? `<div class="bar wrap"><button class="primary" data-act="camOn">📷 Activar cámara</button>
+      ${camErr ? `<span class="hint">${esc(camErr)}</span>` : ''}</div>` : ''}
+    ${cams.length > 1 ? `<div class="bar"><label>Cámara <select data-p="camId">${opts([['', 'Automática'],
       ...cams.map((d, i) => [d.deviceId, esc(d.label || `Cámara ${i + 1}`)])], P.camId)}</select></label></div>` : ''}
     <div class="bar">
       <button data-act="flip" aria-label="Cambiar cámara">⟲</button>
@@ -1139,6 +1160,7 @@ const acts = {
     if (replaceIdx != null) P.onion = true;
     renderPanel(); requestDraw(); sendOnion();
   },
+  camOn: startCam,
   remoteOn: startRemoteHost,
   remoteOff: stopRemoteHost,
   dup() { P.frames.splice(selFrame + 1, 0, { ...P.frames[selFrame] }); selFrame++; curTick = frameStart(selFrame); changed(); },
@@ -1287,7 +1309,11 @@ wake();
 
 const remoteHost = new URLSearchParams(location.search).get('remote');
 if (remoteHost) runRemote(remoteHost);
-else { await load(); setTab('cam'); }
+else {
+  try { await load(); }
+  catch (e) { alert('No se pudo abrir el almacenamiento del navegador (' + e.message + '). Los cambios no se guardarán; ¿estás en modo incógnito?'); }
+  setTab('cam');
+}
 </script>
 </body>
 </html>
