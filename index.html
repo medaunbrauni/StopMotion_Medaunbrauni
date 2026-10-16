@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<title>StopMo</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#111;color:#eee;font:15px system-ui,sans-serif;overflow:hidden;touch-action:manipulation;user-select:none}
+body{display:flex;flex-direction:column;height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+#stage{position:relative;flex:1;min-height:25vh;background:#000}
+#cv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;touch-action:none}
+#cam{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+#msg{position:absolute;left:0;right:0;top:40%;text-align:center;padding:16px;pointer-events:none;text-shadow:0 1px 4px #000}
+#fileBtn{position:absolute;top:8px;left:8px;z-index:2;display:block;max-width:60%;min-height:40px;background:#000a;border:1px solid #fff3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fileMenu{position:fixed;inset:auto;top:56px;left:8px;margin:0;width:min(440px,calc(100vw - 16px));max-height:75vh;overflow:auto;
+  background:#1b1b1b;color:#eee;border:1px solid #444;border-radius:12px;padding:6px 0;box-shadow:0 8px 30px #000a}
+.qr{background:#fff;padding:6px;border-radius:8px;line-height:0;flex:none}
+.qr svg{width:170px;height:170px}
+a{color:#7cc4ff;word-break:break-all}
+#rStage{position:relative;flex:1;min-height:0;background:#000}
+#rStage video,#rStage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#rOnion{pointer-events:none}
+#rMsg{position:absolute;left:0;right:0;top:40%;text-align:center;padding:16px;text-shadow:0 1px 4px #000}
+#count{position:absolute;left:0;right:0;top:18%;text-align:center;pointer-events:none;text-shadow:0 2px 8px #000}
+#count b{display:block;font-size:120px;line-height:1.1}
+#count span{font-size:22px;font-weight:600}
+#stage.flash::after,#rStage.flash::after{content:'';position:absolute;inset:0;background:#fff;pointer-events:none;animation:flash .3s forwards}
+@keyframes flash{to{opacity:0}}
+.bar{display:flex;gap:8px;align-items:center;padding:6px 16px}
+.wrap{flex-wrap:wrap}
+.grow{flex:1}
+button,.btn,select{background:#2a2a2a;color:#eee;border:0;border-radius:10px;min-width:44px;min-height:44px;padding:0 12px;font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+button:active,.btn:active{background:#444}
+button:disabled{opacity:.4}
+.primary{background:#c22}
+#shot{width:72px;height:72px;border-radius:50%;background:#e33;border:4px solid #fff;margin:0 auto;flex:none}
+.mini{font-size:13px;min-height:36px;padding:0 10px;border:1px solid #555}
+.mini.on{background:#c22;border-color:#fff}
+label{display:flex;align-items:center;gap:6px}
+input[type=number]{width:60px;min-height:40px;background:#2a2a2a;color:#eee;border:0;border-radius:8px;padding:0 6px;font:inherit}
+input[type=range]{width:96px}
+input[type=color]{width:44px;height:36px;border:0;background:none}
+#time{font-size:13px;color:#aaa;text-align:right;white-space:nowrap;overflow:hidden}
+#tlWrap{position:relative;flex:none;border-block:1px solid #333}
+#tl{overflow:auto;max-height:26vh;scrollbar-width:none}
+#tl::-webkit-scrollbar{display:none}
+#tlIn{width:max-content}
+.row{display:flex;height:22px;margin:3px 0}
+.row:first-child{height:52px}
+.arow{height:34px}
+.th{position:relative;flex:none;height:100%;border:2px solid #111;overflow:hidden;background:#222}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th.sel{border-color:#e33}
+.th[data-h]::after{content:attr(data-h);position:absolute;right:2px;bottom:1px;font-size:11px;background:#000b;padding:0 3px;border-radius:3px}
+.lbar{flex:none;background:#2a6a45;border-radius:4px;font-size:11px;padding:0 4px;line-height:22px;overflow:hidden;white-space:nowrap}
+.wave{position:relative;flex:none;background:#1d3346;border-radius:4px;overflow:hidden;touch-action:none;cursor:grab}
+.wave canvas{height:100%;display:block;pointer-events:none}
+.wave .wname{position:absolute;left:16px;top:1px;font-size:10px;color:#cde;pointer-events:none;white-space:nowrap}
+.wave .edge{position:absolute;top:0;bottom:0;width:14px;background:#ffffff30;cursor:ew-resize}
+.wave .edge[data-edge=l]{left:0;border-radius:4px 0 0 4px}
+.wave .edge[data-edge=r]{right:0;border-radius:0 4px 4px 0}
+.lbar.sel,.wave.sel{outline:2px solid #e33}
+#ph{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#e33;pointer-events:none}
+#tabs{display:flex}
+#tabs button{flex:1;border-radius:0;background:#1a1a1a}
+#tabs button.on{background:#2c2c2c;box-shadow:inset 0 -3px #e33}
+#panel{flex:none;max-height:38vh;overflow-y:auto;padding-bottom:8px}
+.hint{font-size:13px;color:#aaa;padding:4px 16px}
+.props{display:flex;flex-direction:column;gap:6px;padding:4px 16px}
+.props label{justify-content:space-between}
+.props input[type=range]{flex:1;max-width:62%}
+.props .bar{padding:2px 0}
+.list{padding:4px 16px}
+.li{display:flex;align-items:center;gap:8px;padding:2px 6px;border-radius:8px}
+.li.sel{background:#2a2a2a;outline:1px solid #e33}
+.li button{min-height:36px;min-width:36px}
+.review{display:flex;gap:6px;overflow-x:auto;padding:6px 16px}
+.review img{height:72px;border-radius:6px;border:3px solid #3a5;flex:none}
+.review img.off{border-color:#555;opacity:.35}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <video id="cam" autoplay playsinline muted></video>
+  <p id="msg"></p>
+  <div id="count"><b></b><span></span></div>
+  <button id="fileBtn" popovertarget="fileMenu" aria-label="Menú Archivo">☰ Archivo</button>
+</div>
+<div id="fileMenu" popover></div>
+<div class="bar">
+  <button id="playBtn" aria-label="Reproducir">▶</button>
+  <select id="mode" aria-label="Modo de reproducción">
+    <option value="normal">Normal</option><option value="loop">Loop</option><option value="boomerang">Boomerang</option>
+  </select>
+  <label>FPS <input id="fps" type="number" min="1" max="30"></label>
+  <span id="time" class="grow"></span>
+  <button id="zoomOut" aria-label="Alejar línea de tiempo">−</button>
+  <button id="zoomIn" aria-label="Acercar línea de tiempo">＋</button>
+</div>
+<div id="tlWrap"><div id="tl"><div id="tlIn"></div></div><div id="ph"></div></div>
+<nav id="tabs">
+  <button data-tab="cam">Cámara</button><button data-tab="frame">Cuadro</button>
+  <button data-tab="layers">Capas</button><button data-tab="export">Exportar</button>
+</nav>
+<section id="panel"></section>
+<script type="module">
+import { passes, exportTicks, frameAt } from './timing.js';
+
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), g = cv.getContext('2d'), cam = $('#cam'), tl = $('#tl'), tlIn = $('#tlIn'), panel = $('#panel'), msg = $('#msg');
+const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiplicar'], ['screen', 'Pantalla'], ['overlay', 'Superponer'],
+  ['lighter', 'Añadir'], ['subtract', 'Restar'], ['difference', 'Diferencia'], ['exclusion', 'Exclusión'],
+  ['darken', 'Oscurecer'], ['lighten', 'Aclarar'], ['color-dodge', 'Sobreexponer'], ['color-burn', 'Subexponer'],
+  ['hard-light', 'Luz fuerte'], ['soft-light', 'Luz suave'], ['hue', 'Tono'], ['saturation', 'Saturación'],
+  ['color', 'Color'], ['luminosity', 'Luminosidad']];
+const DEF = {
+  id: '', name: 'Sin título', w: 1280, h: 720, fps: 12, mode: 'normal', bg: '#ffffff', onion: true, onionOp: 0.4,
+  camId: '', burstN: 10, burstS: 3, expFmt: 'mp4', gifW: '480', expBy: 'reps', expReps: 3, expSecs: 10, frames: [],
+  layers: [{ id: 'frames', type: 'frames', name: 'Cuadros', blend: 'source-over', opacity: 1, visible: true }],
+};
+// Formats the browser can record natively, best codec first.
+const FORMATS = {
+  mp4: { name: 'MP4 (H.264)', video: ['video/mp4;codecs=avc1.42E01E', 'video/mp4'], audio: ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4'] },
+  webm: { name: 'WebM (VP9)', video: ['video/webm;codecs=vp9', 'video/webm'], audio: ['video/webm;codecs=vp9,opus', 'video/webm'] },
+  gif: { name: 'GIF animado' },
+  png: { name: 'Secuencia PNG (ZIP)' },
+  jpg: { name: 'Secuencia JPG (ZIP)' },
+};
+const fmtOk = k => !FORMATS[k].video || FORMATS[k].video.some(t => MediaRecorder.isTypeSupported(t));
+// Loaded only when exporting a GIF or an image sequence.
+const GIFENC = 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js';
+const FFLATE = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js';
+// Phone as remote camera: PeerJS's public broker only introduces the devices; photos travel peer to peer.
+const PEERJS = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm';
+const QRGEN = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm';
+const PUBLIC_URL = 'https://medaunbrauni.github.io/StopMotion_Medaunbrauni/';
+// A phone can't use localhost, so the QR always points at the published copy when running locally.
+const baseUrl = () => ['localhost', '127.0.0.1'].includes(location.hostname) ? PUBLIC_URL : location.origin + location.pathname;
+const LEAD = 0.15; // seconds between pressing play and the first frame
+
+let P = structuredClone(DEF);
+let tab = null, curTick = 0, ppt = 24, selFrame = null, selLayerId = 'frames', replaceIdx = null;
+const count = { big: '', sub: '' }; // burst countdown overlay
+let replaceBack = false; // after a replace, return to the Cuadro tab (true) or stay on the camera
+let peer = null, remoteUrl = '', qrSvg = '', remoteErr = '';
+const conns = new Set(); // connected phones
+let facing = 'environment', camErr = '', player = null, recA = null, lastExport = null, quiet = false;
+let burst = null; // {running, pending: [{blob, url, keep}], cancel}
+const blobs = new Map(), imgs = new Map(), auds = new Map();
+
+const uid = () => Math.random().toString(36).slice(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+const fmt = s => `${s < 0 ? '-' : ''}${Math.floor(Math.abs(s) / 60)}:${(Math.abs(s) % 60).toFixed(2).padStart(5, '0')}`;
+const T = () => P.frames.reduce((s, f) => s + f.hold, 0);
+const frameStart = i => P.frames.slice(0, i).reduce((s, f) => s + f.hold, 0);
+const curFrame = () => P.frames.length ? frameAt(P.frames.map(f => f.hold), Math.floor(curTick)) : -1;
+const selLayer = () => P.layers.find(l => l.id === selLayerId) ?? P.layers.find(l => l.type === 'frames');
+let _ac;
+const ac = () => _ac ||= new AudioContext();
+
+// ---------- storage: blobs (images/audio) + project JSON in IndexedDB ----------
+const req = r => new Promise((ok, ko) => { r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+const dbp = new Promise((ok, ko) => {
+  const r = indexedDB.open('stopmo2', 1);
+  r.onupgradeneeded = () => { r.result.createObjectStore('blobs', { autoIncrement: true }); r.result.createObjectStore('meta'); };
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => ko(r.error);
+});
+const store = async (name, mode = 'readonly') => (await dbp).transaction(name, mode).objectStore(name);
+// Each project is a meta record keyed by its id; meta 'current' remembers the open one.
+let saveT;
+async function saveNow() {
+  clearTimeout(saveT);
+  P.updated = Date.now();
+  const s = await store('meta', 'readwrite');
+  s.put(P, P.id);
+  s.put(P.id, 'current');
+  document.title = `${P.name} · StopMo`;
+  $('#fileBtn').textContent = `☰ ${P.name}`;
+}
+function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
+const allProjects = async () => (await req((await store('meta')).getAll())).filter(p => p?.frames);
+async function putBlob(blob) {
+  const key = await req((await store('blobs', 'readwrite')).add(blob));
+  blobs.set(key, { blob, url: URL.createObjectURL(blob) });
+  return key;
+}
+// Drop blobs no frame or layer references (duplicated frames share a blob).
+async function gc() {
+  const used = new Set();
+  for (const p of [P, ...(await allProjects()).filter(x => x.id !== P.id)]) {
+    p.frames.forEach(f => used.add(f.key));
+    p.layers.forEach(l => l.key != null && used.add(l.key));
+  }
+  const dead = [...blobs.keys()].filter(k => !used.has(k));
+  if (!dead.length) return;
+  const s = await store('blobs', 'readwrite');
+  for (const k of dead) {
+    s.delete(k);
+    URL.revokeObjectURL(blobs.get(k).url);
+    blobs.delete(k); imgs.delete(k); auds.delete(k);
+  }
+}
+async function load() {
+  const s = await store('blobs'), k = s.getAllKeys(), v = s.getAll();
+  const [keys, vals] = await Promise.all([req(k), req(v)]);
+  keys.forEach((key, i) => blobs.set(key, { blob: vals[i], url: URL.createObjectURL(vals[i]) }));
+  const m = await store('meta'), cur = m.get('current'), old = m.get('project');
+  const [curId, legacy] = await Promise.all([req(cur), req(old)]);
+  let p = curId && await req((await store('meta')).get(curId));
+  if (!p && legacy) { // single-project format from earlier versions
+    p = { ...legacy, id: uid(), name: 'Proyecto 1' };
+    (await store('meta', 'readwrite')).delete('project');
+  }
+  await openProject(p ?? { id: uid(), name: 'Proyecto 1' });
+}
+async function openProject(p) {
+  if (player) togglePlay();
+  if (burst) endBurst();
+  P = { ...structuredClone(DEF), ...p };
+  await Promise.all(P.layers.filter(l => l.type === 'audio').map(l => decodeAudio(l.key).catch(() => {})));
+  for (const l of P.layers) if (l.type === 'audio') { l.trimIn ??= 0; l.dur ??= auds.get(l.key)?.buf.duration ?? 0; }
+  selFrame = replaceIdx = null; curTick = 0; selLayerId = 'frames'; lastExport = null;
+  cv.width = P.w; cv.height = P.h;
+  $('#mode').value = P.mode;
+  $('#fps').value = P.fps;
+  await saveNow();
+  renderTL();
+  if (tab) renderPanel();
+  requestDraw();
+}
+const downloadFile = f => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(f); a.download = f.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+};
+// Project file: a zip with project.json plus every image/audio blob it uses.
+// ponytail: builds the whole zip in memory; stream it if projects outgrow the phone's RAM.
+async function saveProjectFile() {
+  await saveNow();
+  const { zipSync } = await import(FFLATE);
+  const keys = [...new Set([...P.frames.map(f => f.key), ...P.layers.filter(l => l.key != null).map(l => l.key)])];
+  const files = { 'project.json': new TextEncoder().encode(JSON.stringify({
+    app: 'stopmo', version: 1, project: P, blobs: Object.fromEntries(keys.map(k => [k, blobs.get(k).blob.type])) })) };
+  for (const k of keys) files[`blobs/${k}`] = new Uint8Array(await blobs.get(k).blob.arrayBuffer());
+  downloadFile(new File([zipSync(files, { level: 0 })], `${P.name.replace(/[\\/:*?"<>|]+/g, '_')}.zip`, { type: 'application/zip' }));
+}
+async function openProjectFile(file) {
+  try {
+    const { unzipSync } = await import(FFLATE);
+    const z = unzipSync(new Uint8Array(await file.arrayBuffer()));
+    const meta = z['project.json'] && JSON.parse(new TextDecoder().decode(z['project.json']));
+    if (meta?.app !== 'stopmo') throw new Error('no es un proyecto de StopMo');
+    const map = new Map();
+    for (const [k, type] of Object.entries(meta.blobs)) map.set(k, await putBlob(new Blob([z[`blobs/${k}`]], { type })));
+    const p = meta.project;
+    p.frames.forEach(f => f.key = map.get(String(f.key)));
+    p.layers.forEach(l => { if (l.key != null) l.key = map.get(String(l.key)); });
+    await saveNow();
+    await openProject({ ...p, id: uid() });
+    refreshProjects();
+  } catch (e) {
+    alert('No se pudo abrir el archivo: ' + e.message);
+  }
+}
+let projList = [];
+async function refreshProjects() {
+  projList = (await allProjects()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  if (menu.matches(':popover-open')) renderMenu();
+}
+const menu = $('#fileMenu');
+function renderMenu() { menu.innerHTML = filePanel(); bindValues(menu); }
+menu.addEventListener('beforetoggle', e => { if (e.newState === 'open') { renderMenu(); refreshProjects(); } });
+
+function img(key) {
+  let im = imgs.get(key);
+  if (!im) {
+    im = new Image();
+    im.onload = requestDraw;
+    im.src = blobs.get(key)?.url ?? '';
+    imgs.set(key, im);
+  }
+  return im;
+}
+// Resolves once the image has loaded (img.decode() can stall while the tab is hidden).
+const loaded = im => im.complete && im.naturalWidth ? Promise.resolve(im)
+  : new Promise((ok, ko) => { im.addEventListener('load', () => ok(im), { once: true }); im.addEventListener('error', ko, { once: true }); });
+// Keeps a reversed copy so boomerang's backward passes play the audio backwards.
+async function decodeAudio(key) {
+  if (auds.has(key)) return;
+  const buf = await ac().decodeAudioData(await blobs.get(key).blob.arrayBuffer());
+  const rev = new AudioBuffer({ length: buf.length, numberOfChannels: buf.numberOfChannels, sampleRate: buf.sampleRate });
+  for (let c = 0; c < buf.numberOfChannels; c++) rev.getChannelData(c).set(buf.getChannelData(c).slice().reverse());
+  auds.set(key, { buf, rev });
+}
+
+// ---------- compositing ----------
+const scratch = document.createElement('canvas');
+function fit(c, src, W, H) {
+  const w = src.videoWidth || src.naturalWidth, h = src.videoHeight || src.naturalHeight;
+  if (!w) return;
+  const s = Math.min(W / w, H / h);
+  c.drawImage(src, (W - w * s) / 2, (H - h * s) / 2, w * s, h * s);
+}
+function geo(l, im) {
+  const iw = im.naturalWidth, ih = im.naturalHeight, [cl, ct, cr, cb] = l.crop;
+  return { sx: iw * cl, sy: ih * ct, sw: iw * (1 - cl - cr), sh: ih * (1 - ct - cb) };
+}
+function xf(c, l) { c.translate(l.x, l.y); c.rotate(l.rot * Math.PI / 180); c.scale(l.scale, l.scale); }
+// ponytail: "Restar" blends on the CPU with getImageData; fine for a prototype, WebGL if it gets slow at full HD.
+function blendDraw(g, blend, paint) {
+  g.save();
+  if (blend !== 'subtract') { g.globalCompositeOperation = blend; paint(g); g.restore(); return; }
+  const W = g.canvas.width, H = g.canvas.height;
+  scratch.width = W; scratch.height = H;
+  const b = scratch.getContext('2d', { willReadFrequently: true });
+  paint(b);
+  const A = g.getImageData(0, 0, W, H), a = A.data, d = b.getImageData(0, 0, W, H).data;
+  for (let i = 0; i < a.length; i += 4) {
+    const k = d[i + 3] / 255;
+    if (k) { a[i] -= d[i] * k; a[i + 1] -= d[i + 1] * k; a[i + 2] -= d[i + 2] * k; }
+  }
+  g.putImageData(A, 0, 0);
+  g.restore();
+}
+function drawScene(g, tick, o = {}) {
+  const W = g.canvas.width, H = g.canvas.height;
+  tick = Math.floor(tick);
+  const fi = P.frames.length ? frameAt(P.frames.map(f => f.hold), tick) : -1;
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  g.fillStyle = P.bg; g.fillRect(0, 0, W, H);
+  for (const l of P.layers) {
+    if (!l.visible || l.type === 'audio') continue;
+    if (l.type === 'image' && (tick < l.start || (l.end != null && tick >= l.end))) continue;
+    blendDraw(g, l.blend, c => {
+      c.globalAlpha = l.opacity;
+      if (l.type === 'frames') {
+        const src = o.live || (fi >= 0 && img(P.frames[fi].key));
+        if (src) fit(c, src, W, H);
+        if (o.live && o.onion) { c.globalAlpha = l.opacity * P.onionOp; fit(c, o.onion, W, H); }
+        return;
+      }
+      const im = img(l.key);
+      if (!im.naturalWidth) return;
+      const { sx, sy, sw, sh } = geo(l, im);
+      if (sw <= 0 || sh <= 0) return;
+      xf(c, l);
+      c.drawImage(im, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+    });
+  }
+  const l = o.sel;
+  if (l?.type === 'image' && img(l.key).naturalWidth) {
+    const { sw, sh } = geo(l, img(l.key));
+    g.save(); xf(g, l);
+    g.setLineDash([12 / l.scale, 8 / l.scale]); g.lineWidth = 3 / l.scale; g.strokeStyle = '#e33';
+    g.strokeRect(-sw / 2, -sh / 2, sw, sh);
+    g.restore();
+  }
+}
+
+let raf = 0;
+const requestDraw = () => { raf ||= requestAnimationFrame(() => { raf = 0; draw(); }); };
+const isLive = () => tab === 'cam' && !player && !conns.size && cam.videoWidth > 0;
+function draw() {
+  const live = isLive();
+  let tick = curTick, onion = null;
+  if (live) {
+    tick = replaceIdx != null ? frameStart(replaceIdx) : T();
+    // Replacing: the frame being replaced is the onion reference, to match its pose.
+    const oi = replaceIdx != null ? replaceIdx : P.frames.length - 1;
+    if (P.onion && P.frames[oi]) onion = img(P.frames[oi].key);
+  }
+  const show = burst?.show; // burst preview frame replaces the live camera
+  drawScene(g, tick, { live: show || (live ? cam : null), onion: show ? null : onion, sel: tab === 'layers' && !player ? selLayer() : null });
+  $('#time').textContent = live
+    ? (replaceIdx != null ? `Reemplazar cuadro ${replaceIdx + 1}` : `Nuevo cuadro ${P.frames.length + 1}`)
+    : `${curFrame() + 1}/${P.frames.length} · ${fmt(curTick / P.fps)}`;
+  $('#count b').textContent = count.big;
+  $('#count span').textContent = count.sub;
+  msg.textContent = tab === 'cam' ? camErr : P.frames.length ? '' : 'Usa la pestaña Cámara para capturar cuadros';
+}
+
+// ---------- camera ----------
+let looping = false;
+function liveLoop() {
+  if (looping) return;
+  looping = true;
+  (function frame() {
+    if (tab !== 'cam' || !cam.srcObject) { looping = false; return; }
+    draw();
+    requestAnimationFrame(frame);
+  })();
+}
+function stopCam() { cam.srcObject?.getTracks().forEach(t => t.stop()); cam.srcObject = null; }
+// Every camera the OS exposes, including phones used as webcams (Windows "connected camera", DroidCam, Iriun…).
+let cams = [];
+async function listCams() {
+  cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  if (tab === 'cam' && !burst) renderPanel();
+}
+navigator.mediaDevices.addEventListener('devicechange', listCams);
+async function startCam() {
+  stopCam();
+  if (conns.size) return; // the phone is the camera
+  const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+  try {
+    cam.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: P.camId ? { deviceId: { exact: P.camId }, ...size } : { facingMode: facing, ...size } });
+    if (tab !== 'cam') return stopCam();
+    camErr = '';
+    await cam.play();
+    liveLoop();
+    listCams(); // labels are only readable after permission is granted
+  } catch (e) {
+    if (P.camId && e.name === 'OverconstrainedError') { P.camId = ''; save(); return startCam(); } // camera unplugged
+    camErr = 'No se pudo abrir la cámara: ' + e.message;
+    requestDraw();
+  }
+}
+function grab() {
+  const c = document.createElement('canvas');
+  c.width = cam.videoWidth; c.height = cam.videoHeight;
+  c.getContext('2d').drawImage(cam, 0, 0);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+}
+async function shot() {
+  if (!cam.videoWidth || burst?.running) return;
+  await addFrame(await grab());
+  navigator.vibrate?.(30);
+}
+function beep(freq, dur = 0.08) {
+  const a = ac(), o = a.createOscillator(), gn = a.createGain();
+  o.frequency.value = freq; gn.gain.value = 0.2;
+  o.connect(gn).connect(a.destination);
+  o.start(); o.stop(a.currentTime + dur);
+}
+// Burst: N shots, S seconds of countdown before each; shots wait for review before joining the timeline.
+async function runBurst() {
+  if (!cam.videoWidth) return;
+  ac().resume();
+  const n = Math.max(1, Math.min(200, P.burstN | 0)), s = Math.max(0, +P.burstS || 0);
+  const b = burst = { running: true, pending: [], cancel: false };
+  renderPanel();
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < n && !b.cancel; i++) {
+    count.sub = `Disparo ${i + 1} de ${n}`;
+    for (let rem = s; rem > 0 && !b.cancel;) {
+      const step = rem - Math.ceil(rem) + 1; // fractional part first, then whole seconds
+      count.big = String(Math.ceil(rem)); requestDraw(); beep(660);
+      await wait(step * 1000);
+      rem -= step;
+    }
+    if (b.cancel || !cam.videoWidth) break;
+    count.big = '';
+    const blob = await grab(), url = URL.createObjectURL(blob);
+    b.pending.push({ blob, url, img: Object.assign(new Image(), { src: url }), keep: true });
+    const st = $('#stage');
+    st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+    beep(1320, 0.15); navigator.vibrate?.(60);
+    renderPanel();
+  }
+  b.running = false; count.big = count.sub = '';
+  if (!b.pending.length) burst = null;
+  renderPanel(); requestDraw();
+}
+// Plays the kept burst shots at the current FPS (boomerang if that mode is selected, otherwise looping).
+function toggleBurstPreview() {
+  const b = burst;
+  if (b.timer) return stopBurstPreview();
+  const shots = b.pending.filter(p => p.keep).map(p => p.img);
+  if (!shots.length) return;
+  const it = passes(shots.length, P.mode === 'boomerang' ? 'boomerang' : 'loop');
+  let p = it.next().value, i = 0;
+  b.timer = setInterval(() => {
+    if (i >= p.n) { p = it.next().value; i = 0; }
+    b.show = shots[p.a + p.dir * i++];
+    requestDraw();
+  }, 1000 / P.fps);
+  renderPanel();
+}
+function stopBurstPreview() {
+  if (!burst?.timer) return;
+  clearInterval(burst.timer);
+  burst.timer = burst.show = null;
+  renderPanel(); requestDraw();
+}
+function endBurst() {
+  stopBurstPreview();
+  burst?.pending.forEach(p => URL.revokeObjectURL(p.url));
+  burst = null;
+  renderPanel(); requestDraw();
+}
+
+// ---------- phone as remote camera: host side ----------
+async function startRemoteHost() {
+  const [{ Peer }, { default: qrcode }] = await Promise.all([import(PEERJS), import(QRGEN)]);
+  remoteErr = '';
+  peer = new Peer('stopmo-' + uid() + uid());
+  renderPanel();
+  peer.on('open', id => {
+    remoteUrl = baseUrl() + '?remote=' + id;
+    const qr = qrcode(0, 'M');
+    qr.addData(remoteUrl); qr.make();
+    qrSvg = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    renderPanel();
+  });
+  peer.on('connection', c => {
+    c.on('open', () => { conns.add(c); stopCam(); sendOnion(); renderPanel(); requestDraw(); });
+    c.on('data', async d => {
+      if (d?.t !== 'frame') return;
+      await addFrame(new Blob([d.img], { type: 'image/jpeg' }));
+      navigator.vibrate?.(30);
+    });
+    c.on('close', () => { conns.delete(c); if (tab === 'cam' && !conns.size) startCam(); renderPanel(); requestDraw(); });
+  });
+  peer.on('error', e => { remoteErr = e.type || e.message; renderPanel(); });
+}
+function stopRemoteHost() {
+  peer?.destroy();
+  peer = null; conns.clear();
+  remoteUrl = qrSvg = remoteErr = '';
+  if (tab === 'cam') startCam();
+  renderPanel();
+}
+// Sends the phone its onion reference: the frame being replaced, or the last frame.
+async function sendOnion() {
+  if (!conns.size) return;
+  const f = P.frames[replaceIdx ?? P.frames.length - 1];
+  const img = f ? await blobs.get(f.key).blob.arrayBuffer() : null;
+  const info = replaceIdx != null ? `Reemplazando el cuadro ${replaceIdx + 1}` : `Siguiente: cuadro ${P.frames.length + 1}`;
+  for (const c of conns) c.send({ t: 'onion', img, info });
+}
+function remotePanel() {
+  if (!peer) return '<div class="bar"><button data-act="remoteOn">📱 Usar celular como cámara</button></div>';
+  if (remoteErr) return `<p class="hint">No se pudo conectar (${esc(remoteErr)}). <button data-act="remoteOff">Cerrar</button></p>`;
+  if (!remoteUrl) return '<p class="hint">Preparando conexión…</p>';
+  if (conns.size) return `<div class="bar wrap"><b>📱 Celular conectado</b><span class="hint">Captura desde el celular; aquí ves la línea de tiempo.</span>
+    <button data-act="remoteOff">Desconectar</button></div>`;
+  return `<div class="bar wrap"><div class="qr">${qrSvg}</div>
+    <div><p class="hint">Escanea el código con el celular (en la misma red Wi-Fi) o abre:<br><a href="${remoteUrl}" target="_blank" rel="noopener">${esc(remoteUrl)}</a></p>
+    <div class="bar"><button data-act="remoteOff">Cancelar</button></div></div></div>`;
+}
+
+// ---------- phone as remote camera: phone side (?remote=<host id>) ----------
+async function runRemote(hostId) {
+  document.title = 'StopMo · cámara remota';
+  document.body.innerHTML = `<div id="rStage"><video id="rCam" autoplay playsinline muted></video><img id="rOnion" alt=""><p id="rMsg">Conectando…</p></div>
+    <div class="bar wrap"><button id="rFlip" aria-label="Cambiar cámara">⟲</button>
+      <label><input type="checkbox" id="rOnOn" checked> Cebolla</label>
+      <input type="range" id="rOnOp" min="0" max="0.8" step="0.05" value="0.4" aria-label="Opacidad de cebolla">
+      <button id="shot" aria-label="Capturar cuadro" disabled></button><span id="rInfo" class="hint grow"></span></div>`;
+  const rCam = $('#rCam'), onion = $('#rOnion'), say = t => $('#rMsg').textContent = t;
+  let facing = 'environment', conn = null;
+  const startCam = async () => {
+    rCam.srcObject?.getTracks().forEach(t => t.stop());
+    try {
+      rCam.srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+    } catch (e) { say('No se pudo abrir la cámara: ' + e.message); }
+  };
+  const showOnion = () => { onion.style.opacity = $('#rOnOn').checked ? $('#rOnOp').value : 0; };
+  $('#rOnOn').onchange = $('#rOnOp').oninput = showOnion;
+  $('#rFlip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; startCam(); };
+  $('#shot').onclick = async () => {
+    if (!conn?.open || !rCam.videoWidth) return;
+    const c = document.createElement('canvas');
+    c.width = rCam.videoWidth; c.height = rCam.videoHeight;
+    c.getContext('2d').drawImage(rCam, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+    conn.send({ t: 'frame', img: await blob.arrayBuffer() });
+    const st = $('#rStage');
+    st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+    navigator.vibrate?.(40);
+  };
+  showOnion();
+  await startCam();
+  const { Peer } = await import(PEERJS);
+  const me = new Peer();
+  me.on('error', e => say('Error de conexión: ' + (e.type || e.message)));
+  me.on('open', () => {
+    conn = me.connect(hostId, { reliable: true });
+    conn.on('open', () => { say(''); $('#shot').disabled = false; });
+    conn.on('data', d => {
+      if (d?.t !== 'onion') return;
+      if (onion.src) URL.revokeObjectURL(onion.src);
+      onion.src = d.img ? URL.createObjectURL(new Blob([d.img], { type: 'image/jpeg' })) : '';
+      onion.hidden = !d.img;
+      $('#rInfo').textContent = d.info;
+    });
+    conn.on('close', () => { $('#shot').disabled = true; say('Desconectado de la PC. Recarga para volver a conectar.'); });
+  });
+}
+
+// ---------- frames & layers ----------
+async function addFrame(blob) {
+  if (!P.frames.length) {
+    const b = await createImageBitmap(blob);
+    P.w = b.width; P.h = b.height; b.close();
+    cv.width = P.w; cv.height = P.h;
+  }
+  const key = await putBlob(blob);
+  if (replaceIdx != null) {
+    P.frames[replaceIdx].key = key;
+    selFrame = replaceIdx; replaceIdx = null;
+    curTick = frameStart(selFrame);
+    gc();
+    if (replaceBack) setTab('frame');
+  } else {
+    P.frames.push({ key, hold: 1 });
+    curTick = T() - 1;
+  }
+  changed();
+}
+async function addImageLayer(file) {
+  const key = await putBlob(file), im = img(key);
+  try { await loaded(im); } catch { alert('No se pudo leer esa imagen.'); return gc(); }
+  const l = { id: uid(), type: 'image', name: file.name.slice(0, 24), key, x: P.w / 2, y: P.h / 2,
+    scale: Math.min(P.w / im.naturalWidth, P.h / im.naturalHeight) * 0.6, rot: 0, crop: [0, 0, 0, 0],
+    opacity: 1, blend: 'source-over', visible: true, start: 0, end: null };
+  P.layers.push(l); selLayerId = l.id;
+  changed();
+}
+async function addAudio(blob, name, offset) {
+  const key = await putBlob(blob);
+  try { await decodeAudio(key); } catch { alert('No se pudo leer ese audio.'); return gc(); }
+  // An audio layer is a clip: buffer seconds [trimIn, trimIn + dur) play at timeline seconds [offset, offset + dur).
+  const l = { id: uid(), type: 'audio', name: name.slice(0, 24), key, offset, trimIn: 0, dur: auds.get(key).buf.duration, volume: 1, visible: true };
+  P.layers.push(l); selLayerId = l.id;
+  changed();
+}
+async function toggleRec() {
+  if (recA) return recA.stop();
+  let s;
+  try { s = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { alert('No se pudo usar el micrófono: ' + e.message); return; }
+  const chunks = [], r = recA = new MediaRecorder(s);
+  r.ondataavailable = e => chunks.push(e.data);
+  // Record over the animation (from the cursor) so the voice lands where you hear it.
+  const from = T() && !player ? togglePlay() : null;
+  const at = from == null ? Math.floor(curTick) / P.fps : from / P.fps - LEAD;
+  r.onstop = async () => {
+    s.getTracks().forEach(t => t.stop());
+    recA = null;
+    if (player) togglePlay();
+    await addAudio(new Blob(chunks, { type: r.mimeType }), 'Voz ' + (P.layers.filter(l => l.type === 'audio').length + 1), at);
+  };
+  r.start();
+  renderPanel();
+}
+function changed() {
+  curTick = Math.min(curTick, Math.max(0, T() - 1));
+  save(); renderTL(); renderPanel(); requestDraw();
+  sendOnion();
+}
+
+// ---------- playback (shared by preview and export) ----------
+function scheduleAudio(actx, out, p, when, fps, srcs) {
+  const lo = (p.dir > 0 ? p.a : p.a - p.n + 1) / fps, hi = lo + p.n / fps;
+  for (const l of P.layers) {
+    const A = l.type === 'audio' && l.visible && auds.get(l.key);
+    if (!A) continue;
+    const s0 = Math.max(lo, l.offset), s1 = Math.min(hi, l.offset + l.dur);
+    if (s1 <= s0) continue;
+    const src = actx.createBufferSource(), gain = actx.createGain();
+    gain.gain.value = l.volume;
+    src.connect(gain).connect(out);
+    if (p.dir > 0) { src.buffer = A.buf; src.start(when + s0 - lo, l.trimIn + s0 - l.offset, s1 - s0); }
+    else { src.buffer = A.rev; src.start(when + hi - s1, A.buf.duration - (l.trimIn + s1 - l.offset), s1 - s0); }
+    srcs.add(src);
+    src.onended = () => srcs.delete(src);
+  }
+}
+function play({ mode, from = 0, total = Infinity, actx, out, onTick, onEnd }) {
+  const fps = P.fps, it = passes(T(), mode, from), t0 = actx.currentTime + LEAD, list = [], srcs = new Set();
+  let queued = 0, last = -1, stopped = false;
+  const schedule = until => {
+    while (queued < total && t0 + queued / fps < until) {
+      const p = it.next().value;
+      if (!p) { total = queued; break; }
+      p.out = queued; p.n = Math.min(p.n, total - queued);
+      list.push(p);
+      scheduleAudio(actx, out, p, t0 + queued / fps, fps, srcs);
+      queued += p.n;
+    }
+  };
+  const stop = ended => {
+    if (stopped) return;
+    stopped = true; clearInterval(iv);
+    srcs.forEach(s => s.stop());
+    if (ended) onEnd?.();
+  };
+  const iv = setInterval(() => {
+    const now = actx.currentTime;
+    schedule(now + 1);
+    const o = Math.floor((now - t0) * fps);
+    if (o >= total) return stop(true);
+    if (o < 0 || o === last) return;
+    last = o;
+    while (list.length > 1 && list[0].out + list[0].n <= o) list.shift();
+    const p = list[0];
+    onTick(p.a + p.dir * (o - p.out), o);
+  }, 1000 / fps / 3);
+  schedule(t0 + 1);
+  return { stop: () => stop(false) };
+}
+function togglePlay() {
+  if (player) { player.stop(); player = null; updPlay(); return null; }
+  const t = T();
+  if (!t) return null;
+  const a = ac();
+  a.resume();
+  let from = Math.floor(curTick);
+  if (from >= t - 1) from = 0;
+  player = play({
+    mode: P.mode, from, actx: a, out: a.destination,
+    onTick: tk => { curTick = tk; tl.scrollLeft = tk * ppt; draw(); },
+    onEnd: () => { player = null; updPlay(); },
+  });
+  updPlay();
+  return from;
+}
+function updPlay() { $('#playBtn').textContent = player ? '■' : '▶'; requestDraw(); }
+
+// Scrubbing: a short grain of every audio layer at the cursor, for lip sync.
+let grains = [];
+function scrub(tick) {
+  const a = ac();
+  if (a.state !== 'running') return;
+  grains.forEach(s => s.stop());
+  grains = [];
+  const t = tick / P.fps, d = Math.max(1 / P.fps, 0.08);
+  for (const l of P.layers) {
+    const A = l.type === 'audio' && l.visible && auds.get(l.key);
+    const off = t - (l.offset ?? 0);
+    if (!A || off < 0 || off >= l.dur) continue;
+    const s = a.createBufferSource(), gn = a.createGain();
+    gn.gain.value = l.volume;
+    s.buffer = A.buf;
+    s.connect(gn).connect(a.destination);
+    s.start(0, l.trimIn + off, Math.min(d, l.dur - off));
+    grains.push(s);
+  }
+}
+
+// ---------- export ----------
+// ponytail: records in real time with MediaRecorder (export takes as long as the clip);
+// WebCodecs + Mediabunny would be frame-exact and faster.
+async function exportVideo() {
+  if (player) togglePlay();
+  const actx = new AudioContext();
+  actx.resume();
+  const out = actx.createMediaStreamDestination();
+  const say = t => { const el = $('#expMsg'); if (el) el.textContent = t; };
+  const btn = panel.querySelector('[data-act=export]');
+  btn.disabled = true;
+  try {
+    const keys = new Set([...P.frames.map(f => f.key), ...P.layers.filter(l => l.type === 'image').map(l => l.key)]);
+    await Promise.all([...keys].map(k => loaded(img(k)).catch(() => {})));
+    const c = document.createElement('canvas');
+    c.width = P.w; c.height = P.h;
+    const cg = c.getContext('2d');
+    const audio = P.layers.some(l => l.type === 'audio' && l.visible && auds.has(l.key));
+    const stream = c.captureStream(P.fps);
+    if (audio) stream.addTrack(out.stream.getAudioTracks()[0]);
+    const type = FORMATS[P.expFmt][audio ? 'audio' : 'video'].find(t => MediaRecorder.isTypeSupported(t))
+      ?? Object.values(FORMATS).flatMap(f => f.video ?? []).find(t => MediaRecorder.isTypeSupported(t));
+    const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 8e6 });
+    const chunks = [], done = new Promise(r => rec.onstop = r);
+    rec.ondataavailable = e => chunks.push(e.data);
+    const total = exportTicks(T(), P.mode, P.expBy, P.expReps, P.expSecs, P.fps);
+    drawScene(cg, 0);
+    rec.start();
+    await new Promise(res => play({
+      mode: P.mode, from: 0, total, actx, out, onEnd: res,
+      onTick: (t, o) => { drawScene(cg, t); say(`Exportando… ${Math.round(o / total * 100)}%`); },
+    }));
+    rec.stop();
+    await done;
+    lastExport = new File(chunks, `stopmo-${Date.now()}.${type.includes('mp4') ? 'mp4' : 'webm'}`, { type: type.split(';')[0] });
+    renderPanel();
+    say('Listo.');
+  } catch (e) {
+    say('Error al exportar: ' + e.message);
+  } finally {
+    actx.close();
+    btn.disabled = false;
+  }
+}
+
+// GIF and image sequences render frame by frame: exact timing, no real-time recording.
+async function exportFrames() {
+  if (player) togglePlay();
+  const say = t => { const el = $('#expMsg'); if (el) el.textContent = t; };
+  const btn = panel.querySelector('[data-act=export]');
+  btn.disabled = true;
+  try {
+    const keys = new Set([...P.frames.map(f => f.key), ...P.layers.filter(l => l.type === 'image').map(l => l.key)]);
+    await Promise.all([...keys].map(k => loaded(img(k)).catch(() => {})));
+    const t = T(), gif = P.expFmt === 'gif';
+    // A GIF loops by itself, so it holds one cycle; a sequence gets the full export length.
+    const total = gif ? (P.mode === 'boomerang' && t > 2 ? 2 * t - 2 : t) : exportTicks(t, P.mode, P.expBy, P.expReps, P.expSecs, P.fps);
+    const ticks = [];
+    for (const p of passes(t, P.mode)) {
+      for (let i = 0; i < p.n && ticks.length < total; i++) ticks.push(p.a + p.dir * i);
+      if (ticks.length >= total) break;
+    }
+    const k = gif ? Math.min(1, +P.gifW / P.w) : 1, w = Math.round(P.w * k), h = Math.round(P.h * k);
+    const full = document.createElement('canvas'), out = document.createElement('canvas');
+    full.width = P.w; full.height = P.h; out.width = w; out.height = h;
+    const fg = full.getContext('2d'), og = out.getContext('2d', { willReadFrequently: true });
+    const holds = P.frames.map(f => f.hold);
+    // Ticks with the same frame and the same visible image layers render identically.
+    const sig = tk => frameAt(holds, tk) + ':' + P.layers
+      .filter(l => l.type === 'image' && l.visible && tk >= l.start && (l.end == null || tk < l.end)).map(l => l.id);
+    const render = tk => { drawScene(fg, tk); og.drawImage(full, 0, 0, w, h); };
+    let bytes, ext, type;
+    if (gif) {
+      const { GIFEncoder, quantize, applyPalette } = await import(GIFENC);
+      const enc = GIFEncoder(), cs = n => Math.round(n * 100 / P.fps); // GIF delays are centiseconds
+      for (let i = 0; i < ticks.length;) {
+        let j = i + 1;
+        while (j < ticks.length && sig(ticks[j]) === sig(ticks[i])) j++;
+        render(ticks[i]);
+        const { data } = og.getImageData(0, 0, w, h), pal = quantize(data, 256);
+        enc.writeFrame(applyPalette(data, pal), w, h, { palette: pal, delay: (cs(j) - cs(i)) * 10, repeat: P.mode === 'normal' ? -1 : 0 });
+        say(`Exportando… ${Math.round(j / ticks.length * 100)}%`);
+        await new Promise(r => setTimeout(r));
+        i = j;
+      }
+      enc.finish();
+      bytes = enc.bytes(); ext = 'gif'; type = 'image/gif';
+    } else {
+      const { zipSync } = await import(FFLATE);
+      const files = {}, cache = new Map(), mime = P.expFmt === 'png' ? 'image/png' : 'image/jpeg';
+      for (let i = 0; i < ticks.length; i++) {
+        const s = sig(ticks[i]);
+        if (!cache.has(s)) {
+          render(ticks[i]);
+          const blob = await new Promise(r => out.toBlob(r, mime, 0.92));
+          cache.set(s, new Uint8Array(await blob.arrayBuffer()));
+        }
+        files[`cuadro_${String(i + 1).padStart(4, '0')}.${P.expFmt}`] = cache.get(s);
+        say(`Exportando… ${Math.round((i + 1) / ticks.length * 100)}%`);
+      }
+      bytes = zipSync(files, { level: 0 }); // images are already compressed
+      ext = 'zip'; type = 'application/zip';
+    }
+    lastExport = new File([bytes], `stopmo-${Date.now()}.${ext}`, { type });
+    renderPanel();
+    say('Listo.');
+  } catch (e) {
+    say('Error al exportar: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------- timeline ----------
+function wave(buf, w, h) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w)); c.height = h;
+  const x = c.getContext('2d'), d = buf.getChannelData(0), step = d.length / c.width;
+  x.fillStyle = '#5ac8fa';
+  for (let i = 0; i < c.width; i++) {
+    let m = 0;
+    for (let j = Math.floor(i * step), e = Math.floor((i + 1) * step); j < e; j += 16) m = Math.max(m, Math.abs(d[j]));
+    const y = Math.max(1, m * h / 2);
+    x.fillRect(i, h / 2 - y, 1, y * 2);
+  }
+  return c;
+}
+function renderTL() {
+  const t = T(), half = tl.clientWidth / 2;
+  tlIn.style.padding = `0 ${half}px`;
+  tlIn.style.minWidth = `${Math.max(t, 1) * ppt + 2 * half}px`;
+  const rows = [`<div class="row">${P.frames.map((f, i) =>
+    `<div class="th${i === selFrame ? ' sel' : ''}" data-fi="${i}" style="width:${f.hold * ppt}px"${f.hold > 1 ? ` data-h="×${f.hold}"` : ''}><img src="${blobs.get(f.key)?.url ?? ''}" alt=""></div>`).join('')}</div>`];
+  for (const l of [...P.layers].reverse()) {
+    const sel = l.id === selLayerId ? ' sel' : '';
+    if (l.type === 'image') rows.push(`<div class="row"><div class="lbar${sel}" data-li="${l.id}" style="margin-left:${l.start * ppt}px;width:${Math.max(1, (l.end ?? t) - l.start) * ppt}px">${esc(l.name)}</div></div>`);
+    if (l.type === 'audio') rows.push(`<div class="row arow"><div class="wave${sel}" data-li="${l.id}"><span class="wname">${esc(l.name)}</span>
+      <i class="edge" data-edge="l"></i><i class="edge" data-edge="r"></i></div></div>`);
+  }
+  tlIn.innerHTML = rows.join('');
+  tlIn.querySelectorAll('.wave').forEach(el => {
+    const l = P.layers.find(x => x.id === el.dataset.li), A = auds.get(l.key);
+    if (!A) return;
+    const w = A.buf.duration * P.fps * ppt;
+    const c = wave(A.buf, Math.min(w, 8000), 32);
+    c.style.width = w + 'px';
+    el.prepend(c);
+    placeClip(el, l);
+  });
+  quiet = true;
+  tl.scrollLeft = curTick * ppt;
+}
+// The clip box shows the visible part; the full waveform slides inside it.
+function placeClip(el, l) {
+  const k = P.fps * ppt;
+  el.style.marginLeft = l.offset * k + 'px';
+  el.style.width = Math.max(l.dur * k, 1) + 'px';
+  el.querySelector('canvas').style.marginLeft = -l.trimIn * k + 'px';
+}
+// Drag a clip to move it, or drag its edges to trim; everything snaps to frames.
+let clipDrag = null;
+tlIn.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.wave');
+  const l = el && P.layers.find(x => x.id === el.dataset.li), A = l && auds.get(l.key);
+  if (!A) return;
+  el.setPointerCapture(e.pointerId);
+  clipDrag = { el, l, A, x0: e.clientX, edge: e.target.dataset.edge, o: l.offset, i: l.trimIn, d: l.dur, moved: false };
+});
+tlIn.addEventListener('pointermove', e => {
+  const g = clipDrag;
+  if (!g) return;
+  const min = 1 / P.fps, snap = s => Math.round(s * P.fps) / P.fps;
+  let dt = snap((e.clientX - g.x0) / (P.fps * ppt));
+  if (dt) g.moved = true;
+  if (g.edge === 'l') {
+    dt = Math.max(-g.i, Math.min(dt, g.d - min));
+    Object.assign(g.l, { offset: g.o + dt, trimIn: g.i + dt, dur: g.d - dt });
+  } else if (g.edge === 'r') {
+    g.l.dur = Math.max(min, Math.min(g.d + dt, g.A.buf.duration - g.i));
+  } else {
+    g.l.offset = g.o + dt;
+  }
+  placeClip(g.el, g.l);
+});
+tlIn.addEventListener('pointerup', () => {
+  if (!clipDrag) return;
+  const { l, moved } = clipDrag;
+  clipDrag = null;
+  selLayerId = l.id;
+  if (moved) { save(); renderPanel(); }
+});
+tlIn.addEventListener('pointercancel', () => { if (clipDrag) { Object.assign(clipDrag.l, { offset: clipDrag.o, trimIn: clipDrag.i, dur: clipDrag.d }); placeClip(clipDrag.el, clipDrag.l); clipDrag = null; } });
+tl.onscroll = () => {
+  if (player) return;
+  curTick = Math.max(0, Math.min(tl.scrollLeft / ppt, T() - 0.001));
+  requestDraw();
+  if (quiet) quiet = false; else scrub(curTick);
+};
+tl.onpointerdown = () => { ac().resume(); if (player) togglePlay(); };
+tl.onclick = e => {
+  const th = e.target.closest('[data-fi]'), li = e.target.closest('[data-li]');
+  if (th) {
+    selFrame = +th.dataset.fi;
+    curTick = frameStart(selFrame);
+    if (replaceIdx != null) { replaceIdx = selFrame; sendOnion(); }
+    renderTL();
+    if (tab === 'cam') { renderPanel(); requestDraw(); } else setTab('frame');
+  }
+  else if (li) { selLayerId = li.dataset.li; renderTL(); setTab('layers'); }
+};
+
+// ---------- move / pinch / rotate the selected image layer on the stage ----------
+const pts = new Map();
+cv.onpointerdown = e => {
+  if (tab !== 'layers' || selLayer().type !== 'image') return;
+  cv.setPointerCapture(e.pointerId);
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+};
+cv.onpointermove = e => {
+  if (!pts.has(e.pointerId)) return;
+  const l = selLayer(), r = cv.getBoundingClientRect(), k = Math.max(P.w / r.width, P.h / r.height);
+  const before = [...pts.values()].slice(0, 2);
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const after = [...pts.values()].slice(0, 2);
+  if (after.length === 2) {
+    const dist = p => Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y), ang = p => Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x);
+    l.scale *= dist(after) / dist(before) || 1;
+    l.rot += (ang(after) - ang(before)) * 180 / Math.PI;
+  }
+  l.x += (after.reduce((s, p) => s + p.x, 0) - before.reduce((s, p) => s + p.x, 0)) / after.length * k;
+  l.y += (after.reduce((s, p) => s + p.y, 0) - before.reduce((s, p) => s + p.y, 0)) / after.length * k;
+  requestDraw();
+};
+cv.onpointerup = cv.onpointercancel = e => {
+  if (!pts.delete(e.pointerId)) return;
+  if (!pts.size) { save(); renderPanel(); }
+};
+cv.onwheel = e => {
+  if (tab !== 'layers' || selLayer().type !== 'image') return;
+  e.preventDefault();
+  selLayer().scale *= e.deltaY < 0 ? 1.05 : 1 / 1.05;
+  save(); requestDraw();
+};
+
+// ---------- panels ----------
+const opts = (list, v) => list.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join('');
+const range = (lp, min, max, step, label) => `<label>${label}<input type="range" data-lp="${lp}" min="${min}" max="${max}" step="${step}"></label>`;
+function camPanel() {
+  if (burst?.running) return `<p class="hint">Disparos continuos: ${burst.pending.length} de ${P.burstN} capturados.</p>
+    <div class="bar"><button data-act="burstStop">■ Detener</button></div>`;
+  if (burst) return `<p class="hint">Revisa los ${burst.pending.length} disparos. Toca uno para descartarlo.</p>
+    <div class="review">${burst.pending.map((p, i) => `<img src="${p.url}" data-pi="${i}"${p.keep ? '' : ' class="off"'} alt="Disparo ${i + 1}">`).join('')}</div>
+    <div class="bar"><button data-act="burstPlay">${burst.timer ? '■ Detener' : `▶ Ver a ${P.fps} fps`}</button><button class="primary" data-act="burstAdd">Añadir ${burst.pending.filter(p => p.keep).length} al timeline</button><button data-act="burstDiscard">Descartar</button></div>`;
+  return `${cams.length > 1 ? `<div class="bar"><label>Cámara <select data-p="camId">${opts([['', 'Automática'],
+      ...cams.map((d, i) => [d.deviceId, esc(d.label || `Cámara ${i + 1}`)])], P.camId)}</select></label></div>` : ''}
+    <div class="bar">
+      <button data-act="flip" aria-label="Cambiar cámara">⟲</button>
+      <label class="btn" aria-label="Importar imágenes como cuadros">🖼<input type="file" accept="image/*" multiple hidden data-file="frames"></label>
+      <button id="shot" data-act="shot" aria-label="Capturar cuadro"></button>
+      ${selFrame != null && P.frames[selFrame] ? `<button class="mini${replaceIdx != null ? ' on' : ''}" data-act="replaceToggle" aria-pressed="${replaceIdx != null}">⇄ Reemplazar ${selFrame + 1}</button>` : ''}
+      <label><input type="checkbox" data-p="onion"> Cebolla</label>
+      <input type="range" data-p="onionOp" min="0" max="0.8" step="0.05" aria-label="Opacidad de cebolla">
+    </div>
+    <p class="hint">${replaceIdx != null ? `Reemplazando el cuadro ${replaceIdx + 1}. <button data-act="cancelReplace">Cancelar</button>` : 'Cada captura se agrega al final.'}</p>
+    ${replaceIdx != null ? '' : `<div class="bar wrap"><span>Disparos continuos:</span>
+      <label><input type="number" min="1" max="200" data-p="burstN"> cuadros</label>
+      <label>cada <input type="number" min="0" max="60" step="0.5" data-p="burstS"> s</label>
+      <button data-act="burst">▶ Iniciar</button></div>`}
+    ${remotePanel()}`;
+}
+function framePanel() {
+  const f = P.frames[selFrame];
+  if (!f) return '<p class="hint">Toca un cuadro en la línea de tiempo para editarlo.</p>';
+  return `<p class="hint">Cuadro ${selFrame + 1} de ${P.frames.length}</p>
+    <div class="bar"><span>Duración</span><button data-act="hold" data-d="-1">−</button><b>${f.hold}</b><button data-act="hold" data-d="1">+</button>
+      <span class="grow"></span><button data-act="move" data-d="-1" aria-label="Mover antes">◀</button><button data-act="move" data-d="1" aria-label="Mover después">▶</button></div>
+    <div class="bar wrap"><button data-act="replaceCam">📷 Reemplazar</button>
+      <label class="btn">🖼 Desde archivo<input type="file" accept="image/*" hidden data-file="replace"></label>
+      <button data-act="dup">⧉ Duplicar</button><button data-act="delFrame">🗑 Borrar</button></div>`;
+}
+function layersPanel() {
+  const l = selLayer();
+  let h = `<div class="list">${[...P.layers].reverse().map(x => `<div class="li${x.id === l.id ? ' sel' : ''}" data-sel="${x.id}">
+      <button data-act="vis" data-id="${x.id}" aria-label="Mostrar u ocultar">${x.visible ? '👁' : '◌'}</button>
+      <span>${{ frames: '🎞', image: '🖼', audio: '🔊' }[x.type]} ${esc(x.name)}</span></div>`).join('')}</div>
+    <div class="bar wrap">
+      <label class="btn">＋ Imagen<input type="file" accept="image/*" hidden data-file="layerImg"></label>
+      <label class="btn">＋ Audio<input type="file" accept="audio/*" hidden data-file="layerAud"></label>
+      <button data-act="rec">${recA ? '■ Detener' : '🎙 Grabar voz'}</button></div>`;
+  const order = `<button data-act="order" data-d="1">Subir</button><button data-act="order" data-d="-1">Bajar</button>`;
+  if (l.type !== 'audio') h += `<div class="props"><label>Mezcla <select data-lp="blend">${opts(BLENDS, l.blend)}</select></label>${range('opacity', 0, 1, 0.01, 'Opacidad')}`;
+  if (l.type === 'frames') h += `<label>Fondo <input type="color" data-p="bg"></label><div class="bar">${order}</div></div>`;
+  if (l.type === 'image') h += `${range('scale', 0.05, 4, 0.01, 'Tamaño')}${range('rot', -180, 180, 1, 'Giro')}
+      ${range('crop.0', 0, 0.95, 0.01, 'Recorte izq.')}${range('crop.2', 0, 0.95, 0.01, 'Recorte der.')}
+      ${range('crop.1', 0, 0.95, 0.01, 'Recorte arriba')}${range('crop.3', 0, 0.95, 0.01, 'Recorte abajo')}
+      <div class="bar wrap"><span>Aparece ${fmt(l.start / P.fps)}</span><button data-act="startHere">Aquí</button>
+        <span>hasta ${l.end == null ? 'el final' : fmt(l.end / P.fps)}</span><button data-act="endHere">Aquí</button><button data-act="endNull">Final</button></div>
+      <div class="bar wrap"><button data-act="center">Centrar</button>${order}<button data-act="delLayer">🗑</button></div></div>
+      <p class="hint">Arrastra la imagen en el lienzo para moverla; con dos dedos la escalas y giras. "Aquí" usa la posición del cursor.</p>`;
+  if (l.type === 'audio') h += `<div class="props">${range('volume', 0, 2, 0.01, 'Volumen')}
+      <div class="bar wrap"><span>Inicio ${fmt(l.offset)} · dura ${fmt(l.dur)}</span><button data-act="off" data-d="-1">−1 cuadro</button>
+        <button data-act="off" data-d="1">+1 cuadro</button><button data-act="offHere">Al cursor</button></div>
+      <div class="bar wrap"><button data-act="cut">✂ Cortar en el cursor</button><button data-act="delLayer">🗑 Borrar clip</button></div></div>
+      <p class="hint">En la línea de tiempo: arrastra el clip para moverlo y sus orillas para recortarlo. Para quitar un pedazo, córtalo, tócalo y bórralo.
+      Desliza la línea de tiempo para escuchar el audio cuadro por cuadro.</p>`;
+  return h;
+}
+function exportPanel() {
+  const t = T(), gif = P.expFmt === 'gif', video = !!FORMATS[P.expFmt]?.video;
+  const n = gif ? (P.mode === 'boomerang' && t > 2 ? 2 * t - 2 : t) : exportTicks(t, P.mode, P.expBy, P.expReps, P.expSecs, P.fps);
+  const canShare = lastExport && navigator.canShare?.({ files: [lastExport] });
+  const len = gif ? `Un ciclo de ${fmt(n / P.fps)}${P.mode === 'normal' ? ' que se reproduce una vez' : ' que se repite sin fin'}.`
+    : video ? `El video durará ${fmt(n / P.fps)}. Exportar tarda lo mismo; deja la pantalla encendida.`
+    : `${n} imágenes numeradas, para importar a ${P.fps} fps.`;
+  return `<div class="bar wrap"><label>Formato <select data-p="expFmt">${opts(Object.keys(FORMATS).filter(fmtOk).map(k => [k, FORMATS[k].name]), P.expFmt)}</select></label>
+      ${gif ? `<label>Ancho <select data-p="gifW">${opts([['320', '320 px'], ['480', '480 px'], ['720', '720 px']], P.gifW)}</select></label>` : ''}</div>
+    <p class="hint">Modo: <b>${{ normal: 'Normal', loop: 'Loop', boomerang: 'Boomerang' }[P.mode]}</b> (se cambia junto al botón ▶).</p>
+    ${P.mode === 'normal' || gif ? '' : `<div class="bar wrap">
+      <label><input type="radio" name="by" value="reps" data-p="expBy"> Repeticiones</label><input type="number" min="1" max="100" data-p="expReps">
+      <label><input type="radio" name="by" value="secs" data-p="expBy"> Duración (s)</label><input type="number" min="1" max="600" data-p="expSecs"></div>`}
+    <p class="hint">${len}</p>
+    <div class="bar wrap"><button class="primary" data-act="export"${t ? '' : ' disabled'}>Exportar</button>
+      ${canShare ? '<button data-act="share">Compartir</button>' : ''}${lastExport ? '<button data-act="download">Descargar</button>' : ''}</div>
+    <p class="hint" id="expMsg"></p>`;
+}
+function filePanel() {
+  const when = t => t ? new Date(t).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  return `<div class="bar wrap"><label>Nombre <input type="text" data-p="name" maxlength="60"></label></div>
+    <div class="bar wrap"><button data-act="newProj">✚ Nuevo</button><button data-act="dupProj">⧉ Guardar como copia</button>
+      <button data-act="saveFile">💾 Guardar en archivo</button>
+      <label class="btn">📂 Abrir archivo<input type="file" accept=".zip,application/zip" hidden data-file="project"></label></div>
+    <p class="hint">Los cambios se guardan solos en este dispositivo. "Guardar en archivo" crea un .zip para respaldar el proyecto o pasarlo a otro dispositivo.</p>
+    <p class="hint"><b>Mis proyectos</b></p>
+    <div class="list">${projList.map(p => `<div class="li${p.id === P.id ? ' sel' : ''}">
+      <span class="grow">${esc(p.name)} · ${p.frames.length} cuadros · ${when(p.updated)}</span>
+      ${p.id === P.id ? '<small>abierto</small>' : `<button data-act="openProj" data-id="${p.id}">Abrir</button>`}
+      <button data-act="delProj" data-id="${p.id}" aria-label="Eliminar proyecto">🗑</button></div>`).join('')}</div>`;
+}
+function renderPanel() {
+  panel.innerHTML = { cam: camPanel, frame: framePanel, layers: layersPanel, export: exportPanel }[tab]();
+  bindValues(panel);
+}
+function bindValues(root) {
+  root.querySelectorAll('[data-p]').forEach(el => {
+    const v = P[el.dataset.p];
+    if (el.type === 'checkbox') el.checked = v;
+    else if (el.type === 'radio') el.checked = el.value === v;
+    else el.value = v;
+  });
+  const l = selLayer();
+  root.querySelectorAll('[data-lp]').forEach(el => {
+    const [a, b] = el.dataset.lp.split('.');
+    el.value = b == null ? l[a] : l[a][b];
+  });
+}
+function setTab(t) {
+  if (t !== 'cam') { replaceIdx = null; if (burst?.running) burst.cancel = true; stopBurstPreview(); }
+  const was = tab;
+  tab = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  if (t === 'cam' && was !== 'cam') startCam();
+  if (t !== 'cam') stopCam();
+  renderPanel(); requestDraw();
+}
+
+const acts = {
+  flip() { facing = facing === 'environment' ? 'user' : 'environment'; P.camId = ''; save(); renderPanel(); startCam(); },
+  shot,
+  burst: runBurst,
+  burstStop() { if (burst) burst.cancel = true; },
+  burstPlay: toggleBurstPreview,
+  async burstAdd() {
+    const keep = burst.pending.filter(p => p.keep);
+    endBurst();
+    for (const p of keep) await addFrame(p.blob);
+  },
+  burstDiscard() { if (confirm('¿Descartar todos los disparos?')) endBurst(); },
+  cancelReplace() { replaceIdx = null; renderPanel(); requestDraw(); },
+  hold(el) { const f = P.frames[selFrame]; f.hold = Math.max(1, f.hold + +el.dataset.d); changed(); },
+  move(el) {
+    const j = selFrame + +el.dataset.d;
+    if (j < 0 || j >= P.frames.length) return;
+    [P.frames[selFrame], P.frames[j]] = [P.frames[j], P.frames[selFrame]];
+    selFrame = j; curTick = frameStart(j);
+    changed();
+  },
+  replaceCam() { replaceIdx = selFrame; replaceBack = true; setTab('cam'); },
+  replaceToggle() {
+    replaceIdx = replaceIdx != null ? null : selFrame;
+    replaceBack = false;
+    if (replaceIdx != null) P.onion = true;
+    renderPanel(); requestDraw(); sendOnion();
+  },
+  remoteOn: startRemoteHost,
+  remoteOff: stopRemoteHost,
+  dup() { P.frames.splice(selFrame + 1, 0, { ...P.frames[selFrame] }); selFrame++; curTick = frameStart(selFrame); changed(); },
+  delFrame() {
+    P.frames.splice(selFrame, 1);
+    selFrame = P.frames.length ? Math.min(selFrame, P.frames.length - 1) : null;
+    if (selFrame != null) curTick = frameStart(selFrame);
+    gc(); changed();
+  },
+  vis(el) { const l = P.layers.find(x => x.id === el.dataset.id); l.visible = !l.visible; changed(); },
+  rec: toggleRec,
+  startHere() { const l = selLayer(); l.start = Math.floor(curTick); if (l.end != null && l.end <= l.start) l.end = null; changed(); },
+  endHere() { const l = selLayer(), e = Math.floor(curTick) + 1; if (e > l.start) l.end = e; changed(); },
+  endNull() { selLayer().end = null; changed(); },
+  center() { Object.assign(selLayer(), { x: P.w / 2, y: P.h / 2, rot: 0 }); changed(); },
+  order(el) {
+    const i = P.layers.indexOf(selLayer()), j = i + +el.dataset.d;
+    if (j < 0 || j >= P.layers.length) return;
+    [P.layers[i], P.layers[j]] = [P.layers[j], P.layers[i]];
+    changed();
+  },
+  delLayer() { const l = selLayer(); P.layers = P.layers.filter(x => x !== l); selLayerId = 'frames'; gc(); changed(); },
+  off(el) { selLayer().offset += +el.dataset.d / P.fps; changed(); },
+  offHere() { selLayer().offset = Math.floor(curTick) / P.fps; changed(); },
+  // Splits the selected clip at the cursor; both halves share the same recording.
+  cut() {
+    const l = selLayer(), t = Math.floor(curTick) / P.fps, at = t - l.offset;
+    if (at <= 0 || at >= l.dur) return alert('Pon el cursor sobre el clip para cortarlo.');
+    const right = { ...l, id: uid(), name: l.name.replace(/( \(\d+\))?$/, '') + ' (2)', offset: t, trimIn: l.trimIn + at, dur: l.dur - at };
+    l.dur = at;
+    P.layers.splice(P.layers.indexOf(l) + 1, 0, right);
+    selLayerId = right.id;
+    changed();
+  },
+  export: () => FORMATS[P.expFmt]?.video ? exportVideo() : exportFrames(),
+  share() { navigator.share({ files: [lastExport] }).catch(() => {}); },
+  download() { downloadFile(lastExport); },
+  async newProj() {
+    menu.hidePopover();
+    await saveNow();
+    await openProject({ id: uid(), name: `Proyecto ${projList.length + 1}` });
+    refreshProjects();
+  },
+  async dupProj() {
+    menu.hidePopover();
+    await saveNow();
+    await openProject({ ...structuredClone(P), id: uid(), name: P.name + ' (copia)' });
+    refreshProjects();
+  },
+  async openProj(el) {
+    menu.hidePopover();
+    await saveNow();
+    await openProject(await req((await store('meta')).get(el.dataset.id)));
+    refreshProjects();
+  },
+  async delProj(el) {
+    const p = projList.find(x => x.id === el.dataset.id);
+    if (!confirm(`¿Eliminar "${p.name}"? No se puede deshacer.`)) return;
+    await req((await store('meta', 'readwrite')).delete(p.id));
+    if (p.id === P.id) {
+      const next = (await allProjects()).sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+      await openProject(next ?? { id: uid(), name: 'Proyecto 1' });
+    }
+    await gc();
+    refreshProjects();
+  },
+  saveFile: saveProjectFile,
+};
+panel.onclick = e => {
+  const a = e.target.closest('[data-act]');
+  if (a) return acts[a.dataset.act]?.(a);
+  const pi = e.target.closest('[data-pi]');
+  if (pi) { stopBurstPreview(); const p = burst.pending[+pi.dataset.pi]; p.keep = !p.keep; return renderPanel(); }
+  const s = e.target.closest('[data-sel]');
+  if (s) { selLayerId = s.dataset.sel; renderTL(); renderPanel(); requestDraw(); }
+};
+panel.oninput = e => {
+  const el = e.target, k = el.dataset.p, lk = el.dataset.lp;
+  if (!k && !lk) return;
+  const v = el.type === 'checkbox' ? el.checked : ['range', 'number'].includes(el.type) ? +el.value : el.value;
+  if (k) { if (el.type === 'radio' && !el.checked) return; P[k] = v; if (k === 'camId') startCam(); }
+  else { const l = selLayer(), [a, b] = lk.split('.'); if (b == null) l[a] = v; else l[a][b] = v; }
+  save(); requestDraw();
+};
+panel.onchange = async e => {
+  const el = e.target;
+  if (!el.dataset.file) { if (tab === 'export') renderPanel(); return; }
+  const files = [...el.files], kind = el.dataset.file;
+  el.value = '';
+  if (!files.length) return;
+  if (kind === 'frames') for (const f of files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))) await addFrame(f);
+  if (kind === 'replace') { replaceIdx = selFrame; replaceBack = true; await addFrame(files[0]); }
+  if (kind === 'layerImg') await addImageLayer(files[0]);
+  if (kind === 'layerAud') await addAudio(files[0], files[0].name, Math.floor(curTick) / P.fps);
+  if (kind === 'project') { menu.hidePopover(); await openProjectFile(files[0]); }
+};
+
+// The Archivo menu shares the panel's handlers.
+menu.onclick = panel.onclick;
+menu.oninput = panel.oninput;
+menu.onchange = panel.onchange;
+
+$('#playBtn').onclick = togglePlay;
+$('#mode').onchange = e => { P.mode = e.target.value; save(); if (tab === 'export') renderPanel(); };
+$('#fps').onchange = e => {
+  P.fps = Math.min(30, Math.max(1, +e.target.value || 12));
+  e.target.value = P.fps;
+  save(); renderTL(); renderPanel(); requestDraw();
+};
+$('#zoomIn').onclick = () => { ppt = Math.min(120, ppt * 1.5); renderTL(); };
+$('#zoomOut').onclick = () => { ppt = Math.max(4, ppt / 1.5); renderTL(); };
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+addEventListener('resize', renderTL);
+
+// Keyboard: ←/→ one frame, ↑/↓ one second, Space plays/pauses.
+addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === ' ') {
+    if (e.target.closest('button')) return; // Space already presses a focused button
+    e.preventDefault();
+    togglePlay();
+    return;
+  }
+  const dir = { ArrowRight: 1, ArrowLeft: -1, ArrowUp: 1, ArrowDown: -1 }[e.key];
+  if (!dir || !P.frames.length) return;
+  e.preventDefault();
+  if (player) togglePlay();
+  ac().resume();
+  curTick = e.key === 'ArrowRight' || e.key === 'ArrowLeft'
+    ? frameStart(Math.max(0, Math.min(P.frames.length - 1, curFrame() + dir)))
+    : Math.max(0, Math.min(T() - 1, Math.floor(curTick) + dir * P.fps));
+  if (selFrame != null) {
+    selFrame = curFrame();
+    if (replaceIdx != null) { replaceIdx = selFrame; sendOnion(); }
+  }
+  renderTL();
+  if (tab !== 'layers') renderPanel();
+  requestDraw();
+  scrub(curTick);
+});
+
+// Keep the screen on while animating.
+const wake = () => navigator.wakeLock?.request('screen').catch(() => {});
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && wake());
+wake();
+
+const remoteHost = new URLSearchParams(location.search).get('remote');
+if (remoteHost) runRemote(remoteHost);
+else { await load(); setTab('cam'); }
+</script>
+</body>
+</html>
